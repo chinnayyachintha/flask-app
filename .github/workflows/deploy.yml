@@ -1,9 +1,6 @@
 name: Deploy Docker Image to ECR and ECS
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       aws_environment:
@@ -38,30 +35,29 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
-          aws-access-key-id: \${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: \${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: \${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ github.event.inputs.aws_region }}
 
       - name: Login to Amazon ECR
         id: login-ecr
         run: |
-          aws ecr get-login-password --region \${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin \${{ secrets.ECR_REGISTRY }}
+          aws ecr get-login-password --region ${{ github.event.inputs.aws_region }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
       - name: Build, Tag, and Push Docker Image to ECR
         run: |
           docker build -t flask-app .
-          docker tag flask-app:\${{ github.event.inputs.image_tag }} \${{ secrets.ECR_REGISTRY }}/\${{ secrets.ECR_REPOSITORY }}:\${{ github.event.inputs.image_tag }}
-          docker push \${{ secrets.ECR_REGISTRY }}/\${{ secrets.ECR_REPOSITORY }}:\${{ github.event.inputs.image_tag }}
+          docker tag flask-app:${{ github.event.inputs.image_tag }} ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.event.inputs.image_tag }}
+          docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.event.inputs.image_tag }}
 
       - name: Force New Deployment in ECS
         run: |
           echo "🚀 Triggering ECS service update..."
           aws ecs update-service \
-            --cluster \${{ secrets.ECS_CLUSTER_NAME }} \
-            --service \${{ secrets.ECS_SERVICE_NAME }} \
+            --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
+            --service ${{ secrets.ECS_SERVICE_NAME }} \
             --force-new-deployment \
-            --region \${{ secrets.AWS_REGION }}
-        
-      - name: Log Trigger Status
-        run: echo "ECS Service deployment triggered successfully."      
+            --region ${{ github.event.inputs.aws_region }}
 
+      - name: Log Trigger Status
+        run: echo "ECS Service deployment triggered successfully."
