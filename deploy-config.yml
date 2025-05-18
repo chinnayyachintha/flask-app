@@ -1,0 +1,20 @@
+default:
+  aws_region: us-west-2
+  aws_account_id: 970547372424
+
+environments:
+  dev:
+    cluster: demo-cluster
+    aws_account_id: 970547372424
+    services:
+      demo_flask_app:
+        ecr_repo: demo-flask-app
+        ecs_service: demo-flask-app-service
+
+  production:
+    cluster: demo-cluster
+    aws_account_id: 970547372424
+    services:
+      demo_flask_app:
+        ecr_repo: demo-flask-app
+        ecs_service: demo-flask-app-service
