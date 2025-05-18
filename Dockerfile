@@ -1,37 +1,41 @@
-# Stage 1: Build (Dependencies)
+# ================================
+# Stage 1: Build Dependencies
+# ================================
 FROM python:3.9-slim AS build
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Set environment variables (fixed format)
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 # Set the working directory
 WORKDIR /app
 
-# Install dependencies
+# Copy requirements file and install dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --user -r requirements.txt
 
-# Stage 2: Development Environment
+# ================================
+# Stage 2: Run the Application
+# ================================
 FROM python:3.9-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV FLASK_ENV=development
+# Set environment variables (fixed format)
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    FLASK_ENV=development \
+    PATH=/root/.local/bin:$PATH
 
 # Set the working directory
 WORKDIR /app
 
-# Copy dependencies from build stage
+# Copy dependencies from the build stage
 COPY --from=build /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
 
-# Copy application code
+# Copy application source code
 COPY . .
 
-# Expose port
+# Expose the application port
 EXPOSE 5000
 
-# Run the application with live reload
+# Run the application
 CMD ["flask", "run", "--host", "0.0.0.0", "--reload"]
