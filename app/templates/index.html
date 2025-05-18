@@ -1,11 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>{{ title }}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Portfolio</title>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <h1>Welcome to My Flask App!</h1>
-    <p>This is a simple Flask application deployed to GitHub.</p>
+    <nav>
+        <a href="#home">Home</a>
+        <a href="#about">About</a>
+        <a href="#experience">Experience</a>
+        <a href="#skills">Skills</a>
+        <a href="#projects">Projects</a>
+        <a href="#articles">Articles</a>
+        <a href="#contact">Contact</a>
+    </nav>
+
+    <section id="home">
+        <h1>Welcome to My Portfolio</h1>
+        <p>I’m a passionate DevOps Engineer with over 2 years of experience in optimizing workflows and building scalable systems.</p>
+    </section>
+
+    <section id="about">
+        <h2>About Me</h2>
+        <p>I specialize in streamlining development processes, ensuring faster and more reliable deployments through automation and cloud solutions.</p>
+    </section>
+
+    <section id="experience">
+        <h2>Experience</h2>
+        <div class="card">
+            <h3>DevOps Engineer at TechCorp</h3>
+            <p>2023 - Present</p>
+            <p>Implemented CI/CD pipelines, reducing deployment time by 40% using Jenkins and GitHub Actions.</p>
+        </div>
+    </section>
+
+    <section id="skills">
+        <h2>Skills</h2>
+        <div class="skills-list">
+            <span>Jenkins</span>
+            <span>Docker</span>
+            <span>Kubernetes</span>
+            <span>Terraform</span>
+            <span>AWS</span>
+            <span>GitHub Actions</span>
+        </div>
+    </section>
+
+    <section id="projects">
+        <h2>Projects</h2>
+        <div class="card">
+            <h3>CI/CD Pipeline Implementation</h3>
+            <p>Designed and deployed a CI/CD pipeline using Jenkins and Docker, improving release cycles by 50%.</p>
+        </div>
+        <div class="card">
+            <h3>Cloud Migration</h3>
+            <p>Led a cloud migration to AWS using Terraform, ensuring zero downtime and scalability.</p>
+        </div>
+    </section>
+
+    <section id="articles">
+        <h2>Articles</h2>
+        <div class="article-list">
+            <a href="https://medium.com" target="_blank">Reducing Deployment Times with CI/CD</a>
+            <a href="https://dev.to" target="_blank">Benefits of Infrastructure-as-Code</a>
+        </div>
+    </section>
+
+    <section id="contact">
+        <h2>Contact</h2>
+        <p>Reach out to me at <a href="mailto:your.email@example.com">your.email@example.com</a></p>
+    </section>
 </body>
 </html>
