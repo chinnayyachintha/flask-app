@@ -92,7 +92,7 @@ jobs:
 
       - name: Build, Tag, and Push Docker Image to ECR
         run: |
-          docker build -t demo-flask-app ./services/flask_app
+          docker build -t demo-flask-app .
           docker tag demo-flask-app:${{ env.IMAGE_TAG }} ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}
           docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}
 
