@@ -4,17 +4,19 @@ default:
 
 environments:
   dev:
-    cluster: demo-cluster
+    cluster: demo-cluster-dev
     aws_account_id: 970547372424
     services:
       demo_flask_app:
-        ecr_repo: demo-flask-app
-        ecs_service: demo-flask-app-service
+        ECR_REPOSITORY: demo-flask-app
+        ECS_CLUSTER_NAME: demo-cluster
+        ECS_SERVICE_NAME: demo-flask-app-service
 
   production:
-    cluster: demo-cluster
+    cluster: demo-cluster-prod
     aws_account_id: 970547372424
     services:
       demo_flask_app:
-        ecr_repo: demo-flask-app
-        ecs_service: demo-flask-app-service
+        ECR_REPOSITORY: demo-flask-app
+        ECS_CLUSTER_NAME: demo-cluster
+        ECS_SERVICE_NAME: demo-flask-app-service

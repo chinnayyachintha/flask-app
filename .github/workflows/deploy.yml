@@ -20,44 +20,78 @@ on:
         default: 'latest'
 
 permissions:
-  contents: read
   id-token: write
+  contents: read
+  pull-requests: write
 
 jobs:
   deploy:
     name: Build, Push Docker Image to ECR, and Deploy to ECS
     runs-on: ubuntu-latest
 
+    env:
+      AWS_REGION: ${{ github.event.inputs.aws_region }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      CONFIG_FILE: deploy-config.yaml
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+
+      - name: Install yq
+        run: |
+          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+          sudo chmod +x /usr/bin/yq
+
+      - name: Load deployment config
+        id: load-config
+        run: |
+          ENV="${{ github.event.inputs.aws_environment }}"
+          REGION="${{ github.event.inputs.aws_region }}"
+          TAG="${{ github.event.inputs.image_tag }}"
+
+          AWS_ACCOUNT_ID=$(yq e ".environments.\"$ENV\".aws_account_id" $CONFIG_FILE)
+          CLUSTER=$(yq e ".environments.\"$ENV\".cluster" $CONFIG_FILE)
+          ECR_REPO=$(yq e ".environments.\"$ENV\".services.flask_app.ECR_REPOSITORY" $CONFIG_FILE)
+          ECS_SERVICE=$(yq e ".environments.\"$ENV\".services.flask_app.ECS_SERVICE_NAME" $CONFIG_FILE)
+
+          # If tag is "latest" or empty, create timestamp tag
+          if [ -z "$TAG" ] || [ "$TAG" = "latest" ]; then
+            TAG=$(date +'%Y%m%d-%H%M%S')
+          fi
+
+          echo "AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID" >> $GITHUB_ENV
+          echo "CLUSTER=$CLUSTER" >> $GITHUB_ENV
+          echo "ECR_REPO=$ECR_REPO" >> $GITHUB_ENV
+          echo "ECS_SERVICE=$ECS_SERVICE" >> $GITHUB_ENV
+          echo "IMAGE_TAG=$TAG" >> $GITHUB_ENV
+          echo "AWS_REGION=$REGION" >> $GITHUB_ENV
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ github.event.inputs.aws_region }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
-        id: login-ecr
         run: |
-          aws ecr get-login-password --region ${{ github.event.inputs.aws_region }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
+          aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
+            docker login --username AWS --password-stdin ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
 
       - name: Build, Tag, and Push Docker Image to ECR
         run: |
-          docker build -t flask-app .
-          docker tag flask-app:${{ github.event.inputs.image_tag }} ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.event.inputs.image_tag }}
-          docker push ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ github.event.inputs.image_tag }}
+          docker build -t flask-app ./services/flask_app
+          docker tag flask-app:${{ env.IMAGE_TAG }} ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}
 
       - name: Force New Deployment in ECS
         run: |
-          echo "🚀 Triggering ECS service update..."
           aws ecs update-service \
-            --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
-            --service ${{ secrets.ECS_SERVICE_NAME }} \
+            --cluster ${{ env.CLUSTER }} \
+            --service ${{ env.ECS_SERVICE }} \
             --force-new-deployment \
-            --region ${{ github.event.inputs.aws_region }}
+            --region ${{ env.AWS_REGION }}
 
       - name: Log Trigger Status
-        run: echo "ECS Service deployment triggered successfully."
+        run: echo "ECS Service deployment triggered successfully with tag ${{ env.IMAGE_TAG }}."
