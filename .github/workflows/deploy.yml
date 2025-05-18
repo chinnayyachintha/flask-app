@@ -87,7 +87,7 @@ jobs:
         run: |
           aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
             docker login --username AWS --password-stdin ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
-            
+
       - name: Create ECR Repository if not exists
         run: |
           aws ecr describe-repositories --repository-names demo-flask-app --region ${{ env.AWS_REGION }} || \
@@ -105,6 +105,17 @@ jobs:
           docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}
           
           echo "✅ Image successfully pushed: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}"
+          
+      - name: Create ECS Cluster if not exists
+        run: |
+          echo "🔄 Checking if ECS Cluster exists..."
+          if ! aws ecs describe-clusters --clusters ${{ env.CLUSTER }} --region ${{ env.AWS_REGION }} | grep ${{ env.CLUSTER }}; then
+            echo "🛠️ Cluster not found. Creating ECS Cluster: ${{ env.CLUSTER }}"
+            aws ecs create-cluster --cluster-name ${{ env.CLUSTER }} --region ${{ env.AWS_REGION }}
+          else
+            echo "✅ Cluster already exists."
+          fi
+        shell: bash
 
       - name: Force New Deployment in ECS
         run: |
