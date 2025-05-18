@@ -87,6 +87,11 @@ jobs:
         run: |
           aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
             docker login --username AWS --password-stdin ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+            
+      - name: Create ECR Repository if not exists
+        run: |
+          aws ecr describe-repositories --repository-names demo-flask-app --region ${{ env.AWS_REGION }} || \
+          aws ecr create-repository --repository-name demo-flask-app --region ${{ env.AWS_REGION }}
 
       - name: Build, Tag, and Push Docker Image to ECR
         run: |
