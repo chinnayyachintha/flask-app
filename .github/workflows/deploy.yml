@@ -46,10 +46,9 @@ jobs:
           sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
           sudo chmod +x /usr/bin/yq
 
-      - name: Load deployment config
+      - name: Load Deployment Config
         id: load-config
         run: |
-          # Ensure the YAML file is in the correct path
           if [ ! -f "$CONFIG_FILE" ]; then
             echo "❌ Config file not found: $CONFIG_FILE"
             exit 1
@@ -59,7 +58,6 @@ jobs:
           REGION="${{ github.event.inputs.aws_region }}"
           TAG="${{ github.event.inputs.image_tag }}"
 
-          # Load data from YAML
           AWS_ACCOUNT_ID=$(yq e ".environments.\"$ENV\".aws_account_id" $CONFIG_FILE)
           CLUSTER=$(yq e ".environments.\"$ENV\".cluster" $CONFIG_FILE)
           ECR_REPO=$(yq e ".environments.\"$ENV\".services.demo_flask_app.ECR_REPOSITORY" $CONFIG_FILE)
@@ -92,17 +90,32 @@ jobs:
 
       - name: Build, Tag, and Push Docker Image to ECR
         run: |
+          echo "🔨 Building Docker image..."
           docker build -t demo-flask-app .
-          docker tag demo-flask-app:${{ env.IMAGE_TAG }} ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}
+          
+          echo "🏷️ Tagging Docker image..."
+          docker tag demo-flask-app ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}
+          
+          echo "📤 Pushing Docker image to ECR..."
           docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}
+          
+          echo "✅ Image successfully pushed: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPO }}:${{ env.IMAGE_TAG }}"
 
       - name: Force New Deployment in ECS
         run: |
+          echo "🔄 Forcing ECS Service to redeploy..."
           aws ecs update-service \
             --cluster ${{ env.CLUSTER }} \
             --service ${{ env.ECS_SERVICE }} \
             --force-new-deployment \
             --region ${{ env.AWS_REGION }}
+          echo "🚀 ECS Service deployment triggered successfully."
 
-      - name: Log Trigger Status
-        run: echo "🚀 ECS Service deployment triggered successfully with tag ${{ env.IMAGE_TAG }}."
+      - name: Log Deployment Status
+        run: |
+          echo "🎉 Deployment completed successfully!"
+          echo "AWS Environment: ${{ github.event.inputs.aws_environment }}"
+          echo "AWS Region: ${{ env.AWS_REGION }}"
+          echo "ECR Repository: ${{ env.ECR_REPO }}"
+          echo "ECS Service: ${{ env.ECS_SERVICE }}"
+          echo "Docker Image Tag: ${{ env.IMAGE_TAG }}"
