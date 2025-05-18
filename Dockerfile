@@ -1,28 +1,37 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+# Stage 1: Build (Dependencies)
+FROM python:3.9-slim AS build
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Set the working directory in the container
+# Set the working directory
 WORKDIR /app
 
-# Copy the requirements file
+# Install dependencies
 COPY requirements.txt .
-
-# Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the application code
-COPY . .
+# Stage 2: Development Environment
+FROM python:3.9-slim
 
-# Make port 5000 available to the world outside this container
-EXPOSE 5000
-
-# Define environment variable
-ENV FLASK_APP=run.py
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 ENV FLASK_ENV=development
 
-# Run the application
-CMD ["flask", "run", "--host", "0.0.0.0"]
+# Set the working directory
+WORKDIR /app
+
+# Copy dependencies from build stage
+COPY --from=build /root/.local /root/.local
+ENV PATH=/root/.local/bin:$PATH
+
+# Copy application code
+COPY . .
+
+# Expose port
+EXPOSE 5000
+
+# Run the application with live reload
+CMD ["flask", "run", "--host", "0.0.0.0", "--reload"]
